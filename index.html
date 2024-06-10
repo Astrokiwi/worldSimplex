@@ -37,16 +37,16 @@
         </canvas>
     </div>
                     
-    <script type="module" src="./main.js"></script>
+    <script type="module" src="./main.js?10"></script>
     
     <button id="changeSeed">Change Seed</button>
 
 
       <div class="dropdown">
-        <input type="radio" id="option1" name="options" onclick="toggleProjectionDropdown('equirectangular')">
+        <input type="radio" id="option1" name="options" onclick="toggleProjectionDropdown('equirectangular')" checked>
         <label for="option1">Equirectangular</label>
 
-        <input type="radio" id="option2" name="options" onclick="toggleProjectionDropdown('orthographic')" checked>
+        <input type="radio" id="option2" name="options" onclick="toggleProjectionDropdown('orthographic')">
         <label for="option2">Orthographic</label>
       </div>
 

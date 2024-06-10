@@ -2,8 +2,13 @@ import {createNoise3D} from "https://cdn.skypack.dev/simplex-noise@4.0.0";
 import alea from 'https://cdn.skypack.dev/alea';
 
 let seed = "seed";
-let projection = "orthographic";
+let projection = "equirectangular";
 let rotationOffset = 0.;
+
+const baseWidth = 256;
+const baseHeight = 128;
+
+let baseHeightMap = new Array(baseWidth*baseHeight);
 
 //let heightChart = numeric.random([1024,720]);
     
@@ -101,43 +106,89 @@ function gridCoordToLatLong(ix,iy,width,height,projection) {
             } else {
                 long = Math.atan2(-x,-y)+rotationOffset;
             }
+            if ( long<0. ) {
+                long+=2.*Math.PI;
+            }
+            long = long%(2.*Math.PI);
 
             break;
     }
     return [lat,long];
 }
 
-function renderMap() {
+function generateBaseMap() {
     const radius = 512;
 
+    // let baseMapImage = new ImageData();
+    
+    let prng = new alea(seed);
+    const noise3D = createNoise3D(prng);
+
+    // long 0 to 2pi, lat -pi/2 to pi/2
+    for (let ix=0 ; ix<baseWidth ; ix++ ) {
+        for ( let iy = 0 ; iy<baseHeight ; iy++ ) {
+            let long = ix*2.*Math.PI/baseWidth;
+            let lat = iy*Math.PI/baseHeight-Math.PI/2.;
+
+            let coords3d = latLongTo3D(lat,long,radius);
+
+            baseHeightMap[ix+iy*baseWidth] = simplexPowerSpectrumSum(coords3d[0],coords3d[1],coords3d[2],noise3D);
+        }
+    }
+}
+
+function renderMap() {
     let c = document.getElementById("mapCanvas");
     let ctx = c.getContext("2d");
 
     let width = c.width;
     let height = c.height;
+    // let width = 2048;
+    // let height = 1024;
 
     let chartImage = new ImageData(width,height);
     let chartColorMap = chartImage.data;
-    
-    let prng = new alea(seed);
-    const noise3D = createNoise3D(prng);
 
     let lat;
     let long;
 
+    // let minlat=1.,maxlat=1.;
+    // let minlong=1.,maxlong=1.;
+
+    // let baseHeightMap = generateLatLongMap();
+
     for (let ix=0 ; ix<width ; ix++ ) {
         for ( let iy = 0 ; iy<height ; iy++ ) {
             [lat,long] = gridCoordToLatLong(ix,iy,width,height,projection);
-            let coords3d = latLongTo3D(lat,long,radius);
+            if (!isFinite(lat) || !isFinite(long) ) {
+                    for ( let ic=0 ; ic<3 ; ic++ ) {
+                        chartColorMap[(ix+iy*width)*4+ic]=0;
+                    }
+                    chartColorMap[(ix+iy*width)*4+3]=255;
+                    continue;
+            }
 
-            let cellHeight = simplexPowerSpectrumSum(coords3d[0],coords3d[1],coords3d[2],noise3D);
+            // let coords3d = latLongTo3D(lat,long,radius);
+
+            // let cellHeight = simplexPowerSpectrumSum(coords3d[0],coords3d[1],coords3d[2],noise3D);
+
+            let xmap = Math.floor(long*baseWidth/(2.*Math.PI));
+            let ymap = Math.floor((lat+Math.PI/2.)/(Math.PI)*baseHeight);
+
+            let cellHeight = baseHeightMap[xmap+ymap*baseWidth];
 
             let cellColor = colorFromHeightLatLong(cellHeight,lat,long);
             for ( let ic=0 ; ic<4 ; ic++ ) {
                 chartColorMap[(ix+iy*width)*4+ic]=cellColor[ic];
             }
+
+            // minlong = Math.min(long,minlong);
+            // minlat = Math.min(lat,minlat);
+            // maxlong = Math.max(long,maxlong);
+            // maxlat = Math.max(lat,maxlat);
         }
     }
+    // console.log(minlong,maxlong,minlat,minlong);
     ctx.putImageData(chartImage,0,0);
 }
 
@@ -195,13 +246,19 @@ function resizeCanvasAndRenderMap() {
 
 function changeSeed () {
     seed = Math.random().toString();
+    generateBaseMap();
     renderMap();
+}
+
+function onLoad () {
+    generateBaseMap();
+    debouncedResizeCanvasAndRenderMap();
 }
 
 const debouncedResizeCanvasAndRenderMap = debounceWithImmediate(resizeCanvasAndRenderMap, 200);
 
 window.addEventListener('resize', debouncedResizeCanvasAndRenderMap);
-window.addEventListener('load', debouncedResizeCanvasAndRenderMap);
+window.addEventListener('load', onLoad);
 document.getElementById('changeSeed').addEventListener('click', changeSeed);
 
 export function toggleProjectionDropdown(newProjection) {
