@@ -1,0 +1,55 @@
+@page {
+    size: letter; /* sets the page size to US Letter */
+    margin: 1cm; /* adjust margins as needed */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 8.5in;
+    height: 11in;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.row {
+    display: flex;
+    flex: 1;
+    border-bottom: 1px dashed #000;
+}
+
+.row:last-child {
+    border-bottom: none;
+}
+
+.column-left {
+    display: flex;
+    width: 30%;
+    padding: 10px;
+/*             border-right: 1px solid #ccc; */
+    align-items: center;
+}
+
+.column-right {
+    width: 70%;
+    padding: 10px;
+}
+
+.dotted-text {
+    padding: 5%;
+    font-family: 'Apple II Screen Typeface', sans-serif;
+    color: #333;
+}
+
+#imageContainer {
+    text-align: center;
+}
+img {
+    width: 80%;
+}
