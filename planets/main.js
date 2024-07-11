@@ -1,12 +1,21 @@
 import {createNoise3D} from "https://cdn.skypack.dev/simplex-noise@4.0.0";
 import alea from 'https://cdn.skypack.dev/alea';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let seed = "seed";
 let projection = "equirectangular";
 let rotationOffset = 0.;
 
-const baseWidth = 256;
-const baseHeight = 128;
+let renderer;
+let scene;
+let sphere;
+let controls;
+const camera = new THREE.PerspectiveCamera(45, 2.0, 0.1, 1000);
+camera.position.z = 3.;
+
+const baseWidth = 1024;
+const baseHeight = 512;
 
 let baseHeightMap = new Array(baseWidth*baseHeight);
 
@@ -138,6 +147,137 @@ function generateBaseMap() {
 }
 
 function renderMap() {
+    if (projection=="orthographic") {
+        switchToCanvas3d();
+        resizeCanvas();
+        renderMap3d();
+    } else {
+        switchToCanvas2d();
+        resizeCanvas();
+        renderMap2d();
+    }
+}
+
+function switchToCanvas3d() {
+    let canvas2d = document.getElementById("mapCanvas");
+    let canvas3d = document.getElementById("mapCanvas3d");
+    canvas2d.style.display = 'none';
+    canvas3d.style.display = 'block';
+}
+
+function switchToCanvas2d() {
+    let canvas2d = document.getElementById("mapCanvas");
+    let canvas3d = document.getElementById("mapCanvas3d");
+    canvas2d.style.display = 'block';
+    canvas3d.style.display = 'none';
+}
+
+function initMap3d() {
+    let c = document.getElementById("mapCanvas3d");
+
+    // Create the scene
+    scene = new THREE.Scene();
+
+    // Create the renderer
+    renderer = new THREE.WebGLRenderer({ canvas: c });
+    // Add orbit controls
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Smoothly rotate sphere
+
+    renderMap3d();
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+
+        controls.update();
+
+
+        // Rotate the sphere for some animation
+        // if (sphere) {
+        //     sphere.rotation.y += 0.01;
+        // }
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+}
+
+function renderMap3d() {
+    let c = document.getElementById("mapCanvas3d");
+
+    // Create a sphere geometry
+    const geometry = new THREE.SphereGeometry(1, 32, 32);
+
+    // Create a canvas to draw the uniform color
+    const colormapCanvas = document.createElement('canvas');
+    colormapCanvas.width = baseWidth;
+    colormapCanvas.height = baseHeight;
+    const context = colormapCanvas.getContext('2d');
+
+    // Create a texture from the color canvas
+    const colormapTexture = new THREE.CanvasTexture(colormapCanvas);
+    let width = colormapCanvas.width;
+    let height = colormapCanvas.height;
+
+    // Generate texture
+    let chartImage = new ImageData(width,height);
+    let chartColorMap = chartImage.data;
+
+    let lat;
+    let long;
+
+    for (let ix=0 ; ix<width ; ix++ ) {
+        for ( let iy = 0 ; iy<height ; iy++ ) {
+            [lat,long] = gridCoordToLatLong(ix,iy,width,height,"equirectangular");
+            if (!isFinite(lat) || !isFinite(long) ) {
+                    for ( let ic=0 ; ic<3 ; ic++ ) {
+                        chartColorMap[(ix+iy*width)*4+ic]=0;
+                    }
+                    chartColorMap[(ix+iy*width)*4+3]=255;
+                    continue;
+            }
+
+            let xmap = Math.floor(long*baseWidth/(2.*Math.PI));
+            let ymap = Math.floor((lat+Math.PI/2.)/(Math.PI)*baseHeight);
+
+            let cellHeight = baseHeightMap[xmap+ymap*baseWidth];
+
+            let cellColor = colorFromHeightLatLong(cellHeight,lat,long);
+            for ( let ic=0 ; ic<4 ; ic++ ) {
+                chartColorMap[(ix+iy*width)*4+ic]=cellColor[ic];
+            }
+        }
+    }
+    context.putImageData(chartImage,0,0);
+
+
+    // Create a material with the color texture
+    const material = new THREE.MeshBasicMaterial({ map: colormapTexture });
+
+    // Create the mesh
+    if (sphere) {
+        scene.remove(sphere);
+        sphere.geometry.dispose();
+        sphere.material.dispose();
+        sphere = null;
+    }
+    sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+
+    renderer.render(scene, camera);
+
+    // Handle window resize
+    // window.addEventListener('resize', () => {
+    //     camera.aspect = c.width / c.height;
+    //     camera.updateProjectionMatrix();
+    //     renderer.setSize(c.width,c.height);
+    // });    
+}
+
+function renderMap2d() {
     let c = document.getElementById("mapCanvas");
     let ctx = c.getContext("2d");
 
@@ -192,30 +332,41 @@ function renderMap() {
     ctx.putImageData(chartImage,0,0);
 }
 
-function animateIf3D() {
-    projection = projection.toLowerCase().replace(/\s+/g, '');
-    if ( projection=='orthographic' ) {
-        rotationOffset+= 2*Math.PI/36.;
-        if (rotationOffset>2*Math.PI ) {
-            rotationOffset-=2.*Math.PI;
-        }
-        renderMap();
-    }
+// function animateIf3D() {
+//     projection = projection.toLowerCase().replace(/\s+/g, '');
+//     if ( projection=='orthographic' ) {
+//         rotationOffset+= 2*Math.PI/36.;
+//         if (rotationOffset>2*Math.PI ) {
+//             rotationOffset-=2.*Math.PI;
+//         }
+//         //renderMap();
+//     }
 
-    setTimeout(animateIf3D, 100);
-}
+//     setTimeout(animateIf3D, 100);
+// }
 
 function resizeCanvas() {
     const aspectRatio = 2.0;
-    const canvas = document.getElementById('mapCanvas');
-    const wrapper = document.querySelector('.canvas-wrapper');
+    let canvas;
+    let wrapper;
+    if ( projection=='orthographic' ) {
+        canvas = document.getElementById('mapCanvas3d');
+        wrapper = document.querySelector('.canvas-wrapper3d');
+    } else {
+        canvas = document.getElementById('mapCanvas');
+        wrapper = document.querySelector('.canvas-wrapper');
+    }
 
     canvas.width = wrapper.clientWidth;
     canvas.height = wrapper.clientWidth/aspectRatio;
 
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'lightblue';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if ( projection=='orthographic' ) {
+        renderer.setSize(canvas.width,canvas.height);
+    } else {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'lightblue';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 let debounceTimeout;
@@ -253,6 +404,7 @@ function changeSeed () {
 function onLoad () {
     generateBaseMap();
     debouncedResizeCanvasAndRenderMap();
+    initMap3d();
 }
 
 const debouncedResizeCanvasAndRenderMap = debounceWithImmediate(resizeCanvasAndRenderMap, 200);
@@ -269,4 +421,4 @@ export function toggleProjectionDropdown(newProjection) {
 window.toggleProjectionDropdown = toggleProjectionDropdown;
 
 // Start animation thread
-animateIf3D();
+// animateIf3D();

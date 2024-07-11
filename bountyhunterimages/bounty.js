@@ -1,5 +1,5 @@
 // List of image filenames
-const images = ['Backer_humanfemale_grahamwilliams_tsilonsiereht.png',
+const imageList = ['Backer_humanfemale_grahamwilliams_tsilonsiereht.png',
                 'Backer_humanfemale_saracastle_drsaracastle_tribute.png',
                 'Backer_humanfemale_wren.png',
                 'Backer_humanmale_adamdoochin_elduce.png',
@@ -143,13 +143,26 @@ const images = ['Backer_humanfemale_grahamwilliams_tsilonsiereht.png',
     // Add more images as needed
 ];
 
-const crimes = [
-        'murder',
-        'kidnapping',
-        'drug-running',
-        'smuggling',
-        'organized crime',
-        'cybercrime'
+const crimeList = [
+        ['murder',1000000],
+        ['kidnapping',500000],
+        ['drug trafficking',1000000],
+        ['smuggling',100000],
+        ['extortion',100000],
+        ['theft',100000],
+        ['espionage',10000000],
+        ['fraud',1000000],
+        ['treason',20000000],
+        ['assault',100000],
+        ['hacking',100000],
+        ['terrorism',10000000],
+        ['forgery',50000],
+        ['vandalism',10000],
+        ['poaching',20000],
+        ['illegal arms dealing',100000],
+        ['bribery',5000],
+        ['corruption',200000],
+        ['desertion',5000],
 ];
 
 // Path to the images folder
@@ -157,27 +170,161 @@ const imageFolder = 'dm_portraits/';
 
 // Function to select a random image
 function getRandomImage() {
-    const randomIndex = Math.floor(Math.random() * images.length);
-    return images[randomIndex];
+    const randomIndex = Math.floor(Math.random() * imageList.length);
+    return imageList[randomIndex];
+}
+
+function displayImage(iBounty,randomImage) {
+    const imageElement = document.getElementById('randomImage'+iBounty);
+    imageElement.src = imageFolder + randomImage;
+}
+
+function joinWithCommasAnd(array) {
+    if (array.length === 0) {
+        return '';
+    } else if (array.length === 1) {
+        return array[0];
+    } else if (array.length === 2) {
+        return array.join(' and ');
+    } else {
+        return array.slice(0, -1).join(', ') + ', and ' + array[array.length - 1];
+    }
+}
+
+function generateRandomSyllable() {
+    let syllable = ""
+    const consonants = ['b','c','d','f','g','h','j','k','l','m','n','p','q','r','s','t','v','w','x','z'];
+    const vowels = ['a','e','i','o','u','y'];
+
+    if ( Math.random()>0.5 ) {
+        const randomIndex = Math.floor(Math.random() * consonants.length);
+        syllable+=consonants[randomIndex];
+    }
+    const randomIndex = Math.floor(Math.random() * vowels.length);
+    syllable+=vowels[randomIndex];
+    if ( Math.random()>0.5 ) {
+        const randomIndex = Math.floor(Math.random() * consonants.length);
+        syllable+=consonants[randomIndex];
+    }
+    return syllable;
+}
+
+function generateRandomName(imagePath) {
+    // let sex;
+    // if (imagePath.includes("female")) {
+    //     sex = "f";
+    // } else {
+    //     sex = "m";
+    // }
+    // if ( sex == "f" ) {
+    //     return "Alex";
+    // } else {
+    //     return "Steve";
+    // }
+    const nSyllables = Math.floor(Math.random()*4)+1;
+    let randomName = ""
+    for ( let iSyllable = 0 ; iSyllable<nSyllables ; iSyllable++ ) {
+        randomName+=generateRandomSyllable();
+    }
+    return randomName;
+}
+
+function generateRandomFullName(imagePath) {
+    return generateRandomName(imagePath)+" "+generateRandomName(imagePath);
+}
+
+const lineLength = 54;
+
+function centerPad(text) {
+    
+    const beforePad = Math.ceil((lineLength-text.length)/2)-1;
+    const afterPad = lineLength - beforePad - text.length - 1;
+    console.log(beforePad,text.length,afterPad,beforePad+text.length+afterPad,lineLength);
+    return "\xa0".repeat(beforePad)+text+"\xa0".repeat(afterPad);
+    // return "-".repeat(beforePad)+text+"-".repeat(afterPad);
+}
+
+function starLine() {
+    const repeats = Math.floor(lineLength/3);
+    return "*\xa0\xa0".repeat(repeats);
+}
+
+function generateRandomBio(imageName) {
+    let crimeIndices = [];
+    let iCrime=0;
+    while ( iCrime<5 ) {
+        const randomIndex = Math.floor(Math.random() * crimeList.length);
+        if (!crimeIndices.includes(randomIndex) ) {
+            crimeIndices.push(randomIndex);
+        }
+        if (Math.random()>0.5) {
+            break;
+        }
+        iCrime++;
+    }
+
+    let crimes = [];
+    let rewards = [];
+    let reward = 0.;
+    for ( iCrime = 0 ; iCrime<crimeIndices.length ;iCrime++ ) {
+        let crimeName = crimeList[crimeIndices[iCrime]][0];
+        let crimeReward = Math.random()*crimeList[crimeIndices[iCrime]][1];
+        const extremeCrime = Math.random()>0.9;
+        if ( extremeCrime ) {
+            crimeName = "multiple counts of "+crimeName;
+            crimeReward*=(Math.random()+2)*5;
+        }
+        crimes.push(crimeName);
+        rewards.push(crimeReward);
+
+        reward+=rewards[iCrime];
+    }
+
+    let combined = crimes.map((crime, index) => {
+        return { crime: crime, reward: rewards[index] };
+    });
+    
+    // Sort the combined array based on the age property
+    combined.sort((a, b) => a.reward - b.reward);
+    
+    // Extract the sorted values back into the original arrays
+    crimes = combined.map(element => element.crime);
+    
+    reward = Math.floor(reward/50)*50;
+
+    let age = Math.floor(Math.random()*50+20);
+
+    let bountyName = generateRandomFullName(imageName);
+
+    const crime = joinWithCommasAnd(crimes);
+    let bioText = centerPad("|BOUNTY OFFERED|")+"<br>" +
+            starLine()+"<br>"+
+            bountyName+", "+age+"<br>"+
+            "Wanted for "+crime+"<br><br>"+
+            "Last seen in Mos Eisley Cantina<br><br>"+
+            "Armed resistance anticipated<br><br>"+
+            "Warning: cybernetic enhancements!<br>  "+
+            starLine()+"<br>"+
+            centerPad("|Reward:Cr"+reward.toLocaleString('en-US')+"|")+"<br>"
+            ;
+
+    bioText = bioText.toUpperCase();
+    return bioText;
+}
+
+function displayBio(iBounty,text) {
+    const bioElement = document.getElementById('bio'+iBounty);
+    bioElement.innerHTML = text;
 }
 
 // Function to display the random image
-function displayRandomImage() {
-    for ( let iImage = 1 ; iImage<=4 ; iImage++ ) { 
-        const randomImage = getRandomImage();
-        const imageElement = document.getElementById('randomImage'+iImage);
-        imageElement.src = imageFolder + randomImage;
-        
-        const bioElement = document.getElementById('bio'+iImage);
-        
-        const randomIndex = Math.floor(Math.random() * crimes.length);
-        bioElement.innerHTML = "Wanted for "+crimes[randomIndex]+"<br><br>"+
-            "Warning: cybernetic enhancements!<br><br>"+
-            "Reward:</br>"+Math.floor(Math.random()*999)+",000 cr";
-
-
+function generateRandomBounties() {
+    for ( let iBounty = 1 ; iBounty<=4 ; iBounty++ ) { 
+        let randomImage = getRandomImage();
+        displayImage(iBounty,randomImage);
+        displayBio(iBounty,generateRandomBio(randomImage));
     }
 }
 
 // Display a random image on page load
-window.onload = displayRandomImage;
+window.onload = generateRandomBounties;

@@ -3,6 +3,11 @@
     margin: 1cm; /* adjust margins as needed */
 }
 
+@font-face {
+    font-family: 'pixelfont';
+    src: url('QuinqueFive.ttf') format('truetype');
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -43,8 +48,10 @@ body {
 
 .dotted-text {
     padding: 5%;
-    font-family: 'Apple II Screen Typeface', sans-serif;
-    color: #333;
+    font-family: 'pixelfont', sans-serif;
+    color: #555;
+    font-size: 0.2cm;
+    line-height: 2;
 }
 
 #imageContainer {
