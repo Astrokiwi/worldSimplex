@@ -55,21 +55,19 @@
         <canvas id="mapCanvas3d" style="border:1px solid #000000;">
         </canvas>
     </div>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.min.js"></script> -->
                     
-    <script type="module" src="./main.js?11"></script>
+    <script type="module" src="./main.js?12"></script>
     
-    <button id="changeSeed">Change Seed</button>
+    <input type="text" id="seedInput" placeholder="seed">
+    <button id="enterSeed">Enter</button>
+    <button id="randomSeed">Random</button>
+    <button id="resetCamera">Reset Camera</button>
 
 
-      <div class="dropdown">
-        <input type="radio" id="option1" name="options" onclick="toggleProjectionDropdown('equirectangular')" checked>
-        <label for="option1">Equirectangular</label>
-
-        <input type="radio" id="option2" name="options" onclick="toggleProjectionDropdown('orthographic')">
-        <label for="option2">Orthographic</label>
-      </div>
+    <select id="projections">
+        <option value="equirectangular">Equirectangular</option>
+        <option value="orthographic">Orthographic (3D)</option>
+    </select>
 
 </body>
 
