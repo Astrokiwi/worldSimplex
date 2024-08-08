@@ -5,8 +5,6 @@ export class OneWorld3DRenderer {
 
     constructor(c,worldMap) {
         this.camera = new THREE.PerspectiveCamera(45, 2.0, 0.1, 1000);
-        this.camera.position.z = 3.;
-
         // let c = document.getElementById("mapCanvas3d");
 
         // Create the scene
@@ -19,9 +17,9 @@ export class OneWorld3DRenderer {
         this.controls.enableDamping = true; // Smoothly rotate sphere
         this.sphere = null;
 
+        this.resetCamera();
+
         this.renderMap3d(worldMap);
-
-
         requestAnimationFrame(this.animate);
     }
     
@@ -36,20 +34,19 @@ export class OneWorld3DRenderer {
         requestAnimationFrame(this.animate);
     }
 
-    renderMap3d(worldMap) {
+    renderMap3d(worldMap,palette) {
         // Create a sphere geometry
         const geometry = new THREE.SphereGeometry(1, 32, 32);
 
         // Create a canvas to draw the uniform color
         const colormapCanvas = document.createElement('canvas');
-        colormapCanvas.width = worldMap.baseWidth;
-        colormapCanvas.height = worldMap.baseHeight;
+        colormapCanvas.width = 2048;
+        colormapCanvas.height = 1024;
         const context = colormapCanvas.getContext('2d');
 
         // Create a texture from the color canvas
         const colormapTexture = new THREE.CanvasTexture(colormapCanvas);
-
-        context.putImageData(worldMap.generateColorMap(colormapCanvas.width,colormapCanvas.height,"equirectangular"),0,0);
+        context.putImageData(worldMap.generateColorMap(colormapCanvas.width,colormapCanvas.height,"equirectangular",palette),0,0);
 
 
         // Create a material with the color texture
@@ -72,9 +69,9 @@ export class OneWorld3DRenderer {
 
     resetCamera() {
         this.controls.target.set(0, 0, 0);
-        this.camera.position.x = 0.;
+        this.camera.position.x = 3.;
         this.camera.position.y = 0.;
-        this.camera.position.z = 3.;
+        this.camera.position.z = 0.;
     }
 
 }

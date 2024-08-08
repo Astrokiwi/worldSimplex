@@ -1,8 +1,9 @@
-import { WorldMap } from './map.js';
-import { OneWorld3DRenderer } from './OneWorld3DRenderer.js';
+import { WorldMap } from './map.js?2';
+import { OneWorld3DRenderer } from './OneWorld3DRenderer.js?2';
 
-let seed = "seed";
+let seed = "Seed";
 let projection = "equirectangular";
+let palette = "landscape";
 
 const singleMap = new WorldMap(seed);
 const world3DRender = new OneWorld3DRenderer(document.getElementById("mapCanvas3d"),singleMap);
@@ -11,7 +12,7 @@ function renderMap() {
     if (projection=="orthographic") {
         switchToCanvas3d();
         resizeCanvas();
-        world3DRender.renderMap3d(singleMap);
+        world3DRender.renderMap3d(singleMap,palette);
     } else {
         switchToCanvas2d();
         resizeCanvas();
@@ -37,7 +38,7 @@ function renderMap2d() {
     let c = document.getElementById("mapCanvas");
     let ctx = c.getContext("2d");
 
-    ctx.putImageData(singleMap.generateColorMap(c.width,c.height,projection),0,0);
+    ctx.putImageData(singleMap.generateColorMap(c.width,c.height,projection,palette),0,0);
 }
 
 function resizeCanvas() {
@@ -114,9 +115,20 @@ function toggleProjectionDropdown(newProjectionEvent) {
     renderMap();
 }
 
+
+function togglePaletteDropdown(newPaletteEvent) {
+    palette = newPaletteEvent.target.value;
+    renderMap();
+}
+
+function resetCamera() {
+    world3DRender.resetCamera();
+}
+
 window.addEventListener('resize', debouncedResizeCanvasAndRenderMap);
 window.addEventListener('load', onLoad);
 document.getElementById('randomSeed').addEventListener('click', randomSeed);
 document.getElementById('enterSeed').addEventListener('click', enterSeed);
-document.getElementById('resetCamera').addEventListener('click', world3DRender.resetCamera);
+document.getElementById('resetCamera').addEventListener('click', resetCamera);
 document.getElementById('projections').addEventListener('change', toggleProjectionDropdown);
+document.getElementById('palettes').addEventListener('change', togglePaletteDropdown);
