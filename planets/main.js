@@ -1,12 +1,13 @@
-import { WorldMap } from './map.js?2';
+import { WorldMap } from './map.js?7';
 import { OneWorld3DRenderer } from './OneWorld3DRenderer.js?2';
 
 let seed = "Seed";
 let projection = "equirectangular";
 let palette = "landscape";
+let planet = "earth";
 
-const singleMap = new WorldMap(seed);
-const world3DRender = new OneWorld3DRenderer(document.getElementById("mapCanvas3d"),singleMap);
+let singleMap = new WorldMap(seed,planet);
+let world3DRender = new OneWorld3DRenderer(document.getElementById("mapCanvas3d"),singleMap);
 
 function renderMap() {
     if (projection=="orthographic") {
@@ -121,6 +122,14 @@ function togglePaletteDropdown(newPaletteEvent) {
     renderMap();
 }
 
+function togglePlanetDropdown(newPlanetevent) {
+    planet = newPlanetevent.target.value;
+    singleMap.setPlanet(planet);
+    singleMap.generateBaseMap(seed);
+    renderMap();
+}
+
+
 function resetCamera() {
     world3DRender.resetCamera();
 }
@@ -132,3 +141,4 @@ document.getElementById('enterSeed').addEventListener('click', enterSeed);
 document.getElementById('resetCamera').addEventListener('click', resetCamera);
 document.getElementById('projections').addEventListener('change', toggleProjectionDropdown);
 document.getElementById('palettes').addEventListener('change', togglePaletteDropdown);
+document.getElementById('planets').addEventListener('change', togglePlanetDropdown);

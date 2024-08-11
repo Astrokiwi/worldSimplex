@@ -1,16 +1,30 @@
 import {createNoise3D} from "https://cdn.skypack.dev/simplex-noise@4.0.0";
 import alea from 'https://cdn.skypack.dev/alea';
-import {PlanetType, EarthPlanet} from "./planettype.js"
+import {JupiterPlanet, EarthPlanet} from "./planettype.js?4"
 
 export class WorldMap {
-    constructor(seed) {
+    constructor(seed,planet) {
         this.seed = seed;
         this.baseWidth = 1024;
         this.baseHeight = 512;
+        this.setPlanet(planet);
 
-        this.baseHeightMap = new Array(this.baseWidth*this.baseHeight);
 
-        this.planetType = new EarthPlanet(this.seed,this.baseWidth,this.baseHeight);
+        this.baseHeightMap = new Array(this.baseWidth*this.baseHeight);//*this.planetType.noiseDimension);
+    }
+
+    setPlanet(planet) {
+        switch(planet) {
+            case "earth":
+                this.planetType = new EarthPlanet(this.seed,this.baseWidth,this.baseHeight);
+                break;
+            case "jupiter":
+                this.planetType = new JupiterPlanet(this.seed,this.baseWidth,this.baseHeight);
+                break;
+            default:
+                this.planetType = new EarthPlanet(this.seed,this.baseWidth,this.baseHeight);
+                break;
+        }
     }
 
     heightFromLat(lat,long) {
@@ -30,13 +44,21 @@ export class WorldMap {
         let h01 = this.baseHeightMap[x0+y1*this.baseWidth]
         let h11 = this.baseHeightMap[x1+y1*this.baseWidth]
 
-        let cellHeight = h00*(1-xf)*(1-yf) + h10*xf*(1-yf) + h01*(1-xf)*yf + h11*xf*yf;
+        if ( Array.isArray(h00) ) {
+            let cellHeight = new Array(h00.length);
+            for ( let ii=0 ; ii<h00.length; ii++ ) {
+                cellHeight[ii] = h00[ii]*(1-xf)*(1-yf) + h10[ii]*xf*(1-yf) + h01[ii]*(1-xf)*yf + h11[ii]*xf*yf;
+            }
+            return cellHeight;
+        } else {
+            let cellHeight = h00*(1-xf)*(1-yf) + h10*xf*(1-yf) + h01*(1-xf)*yf + h11*xf*yf;
 
-        // let xmap = Math.floor(long*this.baseWidth/(2.*Math.PI));
-        // let ymap = Math.floor((lat+Math.PI/2.)/(Math.PI)*this.baseHeight);
+            // let xmap = Math.floor(long*this.baseWidth/(2.*Math.PI));
+            // let ymap = Math.floor((lat+Math.PI/2.)/(Math.PI)*this.baseHeight);
 
-        // let cellHeight = this.baseHeightMap[xmap+ymap*this.baseWidth];
-        return cellHeight;
+            // let cellHeight = this.baseHeightMap[xmap+ymap*this.baseWidth];
+            return cellHeight;
+        }
     }
 
 
@@ -111,6 +133,8 @@ export class WorldMap {
         let prng = new alea(this.seed);
         const noise3D = createNoise3D(prng);
 
+        this.planetType.setSeed(this.seed);
+
         // long 0 to 2pi, lat -pi/2 to pi/2
         for (let ix=0 ; ix<this.baseWidth ; ix++ ) {
             for ( let iy = 0 ; iy<this.baseHeight ; iy++ ) {
@@ -119,7 +143,8 @@ export class WorldMap {
 
                 let coords3d = this.latLongTo3D(lat,long,radius);
 
-                this.baseHeightMap[ix+iy*this.baseWidth] = this.planetType.simplexPowerSpectrumSum(coords3d[0],coords3d[1],coords3d[2],noise3D);//planettype
+                this.baseHeightMap[ix+iy*this.baseWidth] = this.planetType.generateHeight(coords3d[0],coords3d[1],coords3d[2],noise3D);//planettype
+                
             }
         }
     }
